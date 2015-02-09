@@ -28,10 +28,10 @@ void main(void)
 	float l = gl_Vertex.y;
 
 	vec2 p = eval_position(t);
+	vec2 d = eval_direction(t);
 
-	vec2 d = normalize(eval_direction(t));
-	vec2 u = vec2(-d.y, d.x);
+	vec2 n = normalize(vec2(-d.y, d.x));
 
 	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = gl_ModelViewProjectionMatrix*vec4(p + l*u, 0., 1.);
+	gl_Position = gl_ModelViewProjectionMatrix*vec4(p + l*n, 0., 1.);
 }

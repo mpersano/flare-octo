@@ -23,8 +23,10 @@ private:
 			void init(const glm::vec2& center, float shake_length);
 
 			glm::vec2 eval(float now) const;
-			glm::vec2 origin, shake_dir;
-			float phi, theta; // lol
+			
+			glm::vec2 origin;
+			float a0, b0, r0;
+			float a1, b1, r1;
 		};
 
 		ctl_point ctl_points[3]; 

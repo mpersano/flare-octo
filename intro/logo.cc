@@ -22,7 +22,7 @@ logo::logo(int width, int height)
 
 	// arrows
 
-	const int NUM_ARROWS = 15;
+	const int NUM_ARROWS = 20;
 	const float RADIUS = 120.;
 
 	const glm::vec2 ORIGIN(.5f*width_, .5f*height_);
@@ -77,7 +77,7 @@ logo::draw(float now) const
 logo::arrow::arrow(const glm::vec2& from, const glm::vec2& to)
 {
 	ctl_points[0].init(from, 5.);
-	ctl_points[1].init(.5f*(from + to), 80.);
+	ctl_points[1].init(.5f*(from + to), 5.);
 	ctl_points[2].init(to, 20.);
 }
 
@@ -87,13 +87,18 @@ logo::arrow::ctl_point::init(const glm::vec2& center, float shake_length)
 	origin = center;
 
 	const float a = frand(0, 2.*M_PI);
-	shake_dir = shake_length*glm::vec2(sinf(a), sinf(a));
-	phi = frand(3., 5.);
-	theta = frand(3., 5.);
+
+	a0 = frand(0., 2.*M_PI);
+	b0 = frand(1., 3.);
+	r0 = frand(.9*shake_length, 1.1*shake_length);
+
+	a1 = frand(0., 2.*M_PI);
+	b1 = frand(1., 3.);
+	r1 = frand(.9*shake_length, 1.1*shake_length);
 }
 
 glm::vec2
 logo::arrow::ctl_point::eval(float now) const
 {
-	return origin + shake_dir*cosf(phi + theta*now);
+	return origin + r0*cosf(a0 + b0*now) + r1*sinf(a1 + b1*now);
 }

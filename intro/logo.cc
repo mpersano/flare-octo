@@ -1,6 +1,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include <glm/geometric.hpp>
+
 #include <ggl/pixmap.h>
 
 #include "util.h"
@@ -10,30 +12,141 @@
 logo::logo(int width, int height)
 : layer(width, height)
 {
+	gen_arrow_texture();
+	gen_background_texture();
+
 	init_arrows();
-	init_arrow_texture();
 }
 
 void
-logo::init_arrow_texture()
+logo::gen_background_texture()
+{
+	// XXX; fix these sizes later
+	ggl::pixmap pm(width_, height_, ggl::pixmap::pixel_type::GRAY);
+
+	const glm::vec2 center(.5*pm.width, .5*pm.height);
+
+	struct blob {
+		glm::vec2 center;
+		float radius;
+	};
+
+	std::vector<blob> blobs;
+
+	for (int i = 0; i < 30; i++) {
+		const float s = 64;
+
+		const glm::vec2 offset(frand(-s, s), frand(-s, s));
+		float radius = 80./(1. + .1f*glm::length(offset));
+
+		blobs.push_back({ center + offset, radius });
+	}
+
+	for (int i = 0; i < 8; i++) {
+		const float a = frand(0., 2.*M_PI);
+		const float r = frand(120, 200);
+
+		glm::vec2 p0 = center + glm::vec2(frand(-8, 8), frand(-8, 8));
+
+		glm::vec2 p2 = center + glm::vec2(r*sinf(a), r*cosf(a));
+		glm::vec2 p1 = .5f*(p0 + p2) + glm::vec2(frand(-32, 32), frand(-32, 32));
+
+		const int NUM_TRAIL_BLOBS = 16;
+
+		for (int j = 0; j < NUM_TRAIL_BLOBS; j++) {
+			const float u = static_cast<float>(j)/(NUM_TRAIL_BLOBS - 1);
+
+			float radius = 20./(1. + 2.f*u);
+
+			const float w0 = (1. - u)*(1. - u);
+			const float w1 = 2.*u*(1. - u);
+			const float w2 = u*u;
+
+			const glm::vec2 p = p0*w0 + p1*w1 + p2*w2;
+
+			const glm::vec2 o(frand(-radius, radius), frand(-radius, radius));
+
+			blobs.push_back({ p + o, radius });
+		}
+	}
+
+	static const int SQRT_SUBSAMPLES = 4;
+	static const int NUM_SUBSAMPLES = SQRT_SUBSAMPLES*SQRT_SUBSAMPLES;
+
+	uint8_t *pixel = &pm.data[0];
+
+	for (int i = 0; i < pm.height; i++) {
+		for (int j = 0; j < pm.width; j++) {
+			int luminance = 0;
+
+			for (int k = 0; k < SQRT_SUBSAMPLES; k++) {
+				glm::vec2 pos(j + static_cast<float>(k)/SQRT_SUBSAMPLES, i);
+
+				for (int l = 0; l < SQRT_SUBSAMPLES; l++) {
+					bool inside = false;
+
+					for (const auto& blob : blobs) {
+						if (glm::distance(pos, blob.center) < blob.radius) {
+							inside = true;
+							break;
+						}
+					}
+
+					luminance += inside;
+
+					pos += glm::vec2(0, 1./SQRT_SUBSAMPLES);
+				}
+			}
+
+			luminance = (luminance*255)/NUM_SUBSAMPLES;
+
+			*pixel++ = luminance;
+		}
+	}
+
+	background_texture_.load(pm);
+
+	background_texture_.set_wrap_s(GL_CLAMP);
+	background_texture_.set_wrap_t(GL_CLAMP);
+
+	background_texture_.set_mag_filter(GL_LINEAR);
+	background_texture_.set_min_filter(GL_LINEAR);
+
+	background_texture_.set_env_mode(GL_MODULATE);
+
+	background_vbo_.add_vertex({ { 0, 0 }, { 0, 0 } });
+	background_vbo_.add_vertex({ { static_cast<float>(width_), 0 }, { 1, 0 } });
+	background_vbo_.add_vertex({ { 0, static_cast<float>(height_) }, { 0, 1 } });
+	background_vbo_.add_vertex({ { static_cast<float>(width_), static_cast<float>(height_) }, { 1, 1 } });
+
+	background_vbo_.buffer(GL_STATIC_DRAW);
+}
+
+void
+logo::gen_arrow_texture()
 {
 	ggl::pixmap pm(256, 64, ggl::pixmap::pixel_type::RGB_ALPHA);
 
 	auto is_inside = [&](const glm::vec2& p, float radius_tail, float radius_head, float x_head, float x_tip) -> bool {
+		if (p.x >= x_tip)
+			return false;
+
 		const float ym = .5f*pm.height;
 
 		float lo, hi;
 
 		if (p.x < x_head) {
+			// tail
+
 			lo = ym - radius_tail;
 			hi = ym + radius_tail;
-		} else if (p.x < x_tip) {
+		} else {
+			// tip
+
 			float h = radius_head*(1. - (p.x - x_head)/(x_tip - x_head));
 
 			lo = ym - h;
 			hi = ym + h;
-		} else {
-			return false;
 		}
 
 		return p.y >= lo && p.y <= hi;
@@ -50,7 +163,7 @@ logo::init_arrow_texture()
 	const glm::vec2 dx(1./SQRT_SUBSAMPLES, 0);
 	const glm::vec2 dy(0, 1./SQRT_SUBSAMPLES);
 
-	uint32_t *p = reinterpret_cast<uint32_t *>(&pm.data[0]);
+	uint32_t *pixel = reinterpret_cast<uint32_t *>(&pm.data[0]);
 
 	for (int i = 0; i < pm.height; i++) {
 		for (int j = 0; j < pm.width; j++) {
@@ -70,7 +183,7 @@ logo::init_arrow_texture()
 
 			alpha = (alpha*255)/NUM_SUBSAMPLES;
 
-			*p++ = (alpha << 24) | 0xffffff;
+			*pixel++ = (alpha << 24) | 0x808080;
 		}
 	}
 
@@ -136,7 +249,6 @@ logo::draw(float now) const
 	const ggl::program *prog = get_program(PROG_ARROW);
 
 	prog->use();
-
 	prog->get_uniform("texture").set(0);
 
 	ggl::program::uniform p0_uniform = prog->get_uniform("p0");
@@ -150,6 +262,13 @@ logo::draw(float now) const
 
 		arrow_vbo_.draw(GL_TRIANGLE_STRIP);
 	}
+
+	get_program(PROG_DECAL)->use();
+
+	glBlendFunc(GL_ONE, GL_ONE); // ARRGH
+
+	background_texture_.bind();
+	background_vbo_.draw(GL_TRIANGLE_STRIP);
 }
 
 logo::arrow::arrow(const glm::vec2& from, const glm::vec2& to)

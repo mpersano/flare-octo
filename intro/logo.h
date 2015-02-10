@@ -16,7 +16,9 @@ public:
 
 private:
 	void init_arrows();
-	void init_arrow_texture();
+
+	void gen_arrow_texture();
+	void gen_background_texture();
 
 	void draw_arrows(float now) const;
 
@@ -37,6 +39,10 @@ private:
 	};
 
 	std::vector<std::unique_ptr<arrow>> arrows_;
+
 	ggl::texture arrow_texture_;
 	ggl::vbo<ggl::vertex_texcoord<GLfloat, 2, GLfloat, 2>> arrow_vbo_;
+
+	ggl::texture background_texture_;
+	ggl::vbo<ggl::vertex_texcoord<GLfloat, 2, GLfloat, 2>> background_vbo_;
 };

@@ -27,31 +27,19 @@ logo::gen_background_texture()
 	ggl::pixmap pm(width_, height_, ggl::pixmap::pixel_type::GRAY);
 
 	auto add_blob = [&](const glm::vec2& center, float radius) {
-		int x_from = std::max(static_cast<int>(center.x - radius), 0);
-		int x_to = std::min(static_cast<int>(center.x + radius) + 1, static_cast<int>(pm.width));
+		int x_from = std::max(static_cast<int>(center.x - radius) - 1, 0);
+		int x_to = std::min(static_cast<int>(center.x + radius) + 2, static_cast<int>(pm.width));
 
-		int y_from = std::max(static_cast<int>(center.y - radius), 0);
-		int y_to = std::min(static_cast<int>(center.y + radius) + 1, static_cast<int>(pm.height));
-
-		const int SQRT_SUBSAMPLES = 4;
-		const int NUM_SUBSAMPLES = SQRT_SUBSAMPLES*SQRT_SUBSAMPLES;
+		int y_from = std::max(static_cast<int>(center.y - radius) - 1, 0);
+		int y_to = std::min(static_cast<int>(center.y + radius) + 2, static_cast<int>(pm.height));
 
 		for (int y = y_from; y < y_to; y++) {
 			uint8_t *pixel = &pm.data[y*pm.width + x_from];
 
 			for (int x = x_from; x < x_to; x++) {
-				int luminance = 0;
-
-				for (int i = 0; i < SQRT_SUBSAMPLES; i++) {
-					glm::vec2 pos(x, y + static_cast<float>(i)/SQRT_SUBSAMPLES);
-
-					for (int l = 0; l < SQRT_SUBSAMPLES; l++) {
-						luminance += glm::distance(pos, center) < radius;
-						pos += glm::vec2(1./SQRT_SUBSAMPLES, 0.);
-					}
-				}
-
-				*pixel++ = std::min((luminance*255)/NUM_SUBSAMPLES + *pixel, 255);
+				const glm::vec2 pos(x, y);
+				float luminance = glm::smoothstep(radius + 1.f, radius, glm::distance(pos, center));
+				*pixel++ = std::min(static_cast<int>(luminance*255) + *pixel, 255);
 			}
 		}
 	};
@@ -81,7 +69,7 @@ logo::gen_background_texture()
 		for (int j = 0; j < NUM_TRAIL_BLOBS; j++) {
 			const float u = static_cast<float>(j)/(NUM_TRAIL_BLOBS - 1);
 
-			float radius = 20./(1. + 2.f*u);
+			float radius = frand(.9f, 1.2f)*20./(1. + 3.f*u);
 
 			const float w0 = (1. - u)*(1. - u);
 			const float w1 = 2.*u*(1. - u);

@@ -1,4 +1,7 @@
 #include <cmath>
+#include <cstdint>
+
+#include <ggl/pixmap.h>
 
 #include "util.h"
 #include "programs.h"
@@ -7,7 +10,85 @@
 logo::logo(int width, int height)
 : layer(width, height)
 {
-	// arrow vbo
+	init_arrows();
+	init_arrow_texture();
+}
+
+void
+logo::init_arrow_texture()
+{
+	ggl::pixmap pm(256, 64, ggl::pixmap::pixel_type::RGB_ALPHA);
+
+	auto is_inside = [&](const glm::vec2& p, float radius_tail, float radius_head, float x_head, float x_tip) -> bool {
+		const float ym = .5f*pm.height;
+
+		float lo, hi;
+
+		if (p.x < x_head) {
+			lo = ym - radius_tail;
+			hi = ym + radius_tail;
+		} else if (p.x < x_tip) {
+			float h = radius_head*(1. - (p.x - x_head)/(x_tip - x_head));
+
+			lo = ym - h;
+			hi = ym + h;
+		} else {
+			return false;
+		}
+
+		return p.y >= lo && p.y <= hi;
+	};
+
+	const float radius_tail = .25*pm.height;
+	const float radius_head = .5*pm.height;
+	const float x_head = .85*pm.width;
+	const float x_tip = pm.width;
+
+	static const int SQRT_SUBSAMPLES = 4;
+	static const int NUM_SUBSAMPLES = SQRT_SUBSAMPLES*SQRT_SUBSAMPLES;
+
+	const glm::vec2 dx(1./SQRT_SUBSAMPLES, 0);
+	const glm::vec2 dy(0, 1./SQRT_SUBSAMPLES);
+
+	uint32_t *p = reinterpret_cast<uint32_t *>(&pm.data[0]);
+
+	for (int i = 0; i < pm.height; i++) {
+		for (int j = 0; j < pm.width; j++) {
+			const glm::vec2 pos(j, i);
+
+			int alpha = 0;
+
+			for (int k = 0; k < SQRT_SUBSAMPLES; k++) {
+				for (int l = 0; l < SQRT_SUBSAMPLES; l++) {
+					glm::vec2 v = pos + static_cast<float>(k)*dx + static_cast<float>(l)*dy;
+
+					alpha += is_inside(v, radius_tail, radius_head, x_head, x_tip);
+
+					// XXX: red,green
+				}
+			}
+
+			alpha = (alpha*255)/NUM_SUBSAMPLES;
+
+			*p++ = (alpha << 24) | 0xffffff;
+		}
+	}
+
+	arrow_texture_.load(pm);
+
+	arrow_texture_.set_wrap_s(GL_CLAMP);
+	arrow_texture_.set_wrap_t(GL_CLAMP);
+
+	arrow_texture_.set_mag_filter(GL_LINEAR);
+	arrow_texture_.set_min_filter(GL_LINEAR);
+
+	arrow_texture_.set_env_mode(GL_MODULATE);
+}
+
+void
+logo::init_arrows()
+{
+	// vbo
 
 	const int NUM_SEGMENTS = 20;
 	const float THICK = 20;
@@ -47,19 +128,14 @@ logo::draw(float now) const
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	arrow_texture_.bind();
+
 	const ggl::program *prog = get_program(PROG_ARROW);
-
 	prog->use();
-
-	prog->set_uniform_f("outer.t0", .2);
-	prog->set_uniform_f("outer.t1", 1.);
-	prog->set_uniform_f("outer.s0", .85);
-	prog->set_uniform_f("outer.s1", 1.);
-
-	prog->set_uniform_f("inner.t0", .1);
-	prog->set_uniform_f("inner.t1", .7);
-	prog->set_uniform_f("inner.s0", .87);
-	prog->set_uniform_f("inner.s1", .97);
+	prog->set_uniform_i("texture", 0);
 
 	for (const auto& arrow : arrows_) {
 		const glm::vec2 p0 = arrow->ctl_points[0].eval(now);

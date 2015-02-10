@@ -3,6 +3,7 @@
 #include "layer.h"
 
 #include <ggl/vertex_array.h>
+#include <ggl/texture.h>
 
 #include <glm/vec2.hpp>
 
@@ -14,6 +15,9 @@ public:
 	void draw(float now) const;
 
 private:
+	void init_arrows();
+	void init_arrow_texture();
+
 	void draw_arrows(float now) const;
 
 	struct arrow {
@@ -33,5 +37,6 @@ private:
 	};
 
 	std::vector<std::unique_ptr<arrow>> arrows_;
+	ggl::texture arrow_texture_;
 	ggl::vbo<ggl::vertex_texcoord<GLfloat, 2, GLfloat, 2>> arrow_vbo_;
 };

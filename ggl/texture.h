@@ -55,7 +55,7 @@ public:
 	size_t get_orig_height() const
 	{ return orig_height_; }
 
-// private:
+private:
 	size_t orig_width_, width_;
 	size_t orig_height_, height_;
 	GLuint id_;

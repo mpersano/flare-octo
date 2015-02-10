@@ -134,17 +134,19 @@ logo::draw(float now) const
 	arrow_texture_.bind();
 
 	const ggl::program *prog = get_program(PROG_ARROW);
+
 	prog->use();
-	prog->set_uniform_i("texture", 0);
+
+	prog->get_uniform("texture").set(0);
+
+	ggl::program::uniform p0_uniform = prog->get_uniform("p0");
+	ggl::program::uniform p1_uniform = prog->get_uniform("p1");
+	ggl::program::uniform p2_uniform = prog->get_uniform("p2");
 
 	for (const auto& arrow : arrows_) {
-		const glm::vec2 p0 = arrow->ctl_points[0].eval(now);
-		const glm::vec2 p1 = arrow->ctl_points[1].eval(now);
-		const glm::vec2 p2 = arrow->ctl_points[2].eval(now);
-
-		prog->set_uniform_f("p0", p0.x, p0.y);
-		prog->set_uniform_f("p1", p1.x, p1.y);
-		prog->set_uniform_f("p2", p2.x, p2.y);
+		p0_uniform = arrow->ctl_points[0].eval(now);
+		p1_uniform = arrow->ctl_points[1].eval(now);
+		p2_uniform = arrow->ctl_points[2].eval(now);
 
 		arrow_vbo_.draw(GL_TRIANGLE_STRIP);
 	}

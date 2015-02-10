@@ -68,51 +68,51 @@ program::get_attribute_location(const GLchar *name) const
 }
 
 void
-program::set_uniform_f(const GLchar *name, GLfloat v0) const
+program::uniform::set(GLfloat v0) const
 {
-	glUniform1f(get_uniform_location(name), v0);
+	glUniform1f(location_, v0);
 }
 
 void
-program::set_uniform_f(const GLchar *name, GLfloat v0, GLfloat v1) const
+program::uniform::set(GLfloat v0, GLfloat v1) const
 {
-	glUniform2f(get_uniform_location(name), v0, v1);
+	glUniform2f(location_, v0, v1);
 }
 
 void
-program::set_uniform_f(const GLchar *name, GLfloat v0, GLfloat v1, GLfloat v2) const
+program::uniform::set(GLfloat v0, GLfloat v1, GLfloat v2) const
 {
-	glUniform3f(get_uniform_location(name), v0, v1, v2);
+	glUniform3f(location_, v0, v1, v2);
 }
 
 void
-program::set_uniform_f(const GLchar *name, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) const
+program::uniform::set(GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) const
 {
-	glUniform4f(get_uniform_location(name), v0, v1, v2, v3);
+	glUniform4f(location_, v0, v1, v2, v3);
 }
 
 void
-program::set_uniform_i(const GLchar *name, GLint v0) const
+program::uniform::set(GLint v0) const
 {
-	glUniform1i(get_uniform_location(name), v0);
+	glUniform1i(location_, v0);
 }
 
 void
-program::set_uniform_i(const GLchar *name, GLint v0, GLint v1) const
+program::uniform::set(GLint v0, GLint v1) const
 {
-	glUniform2i(get_uniform_location(name), v0, v1);
+	glUniform2i(location_, v0, v1);
 }
 
 void
-program::set_uniform_i(const GLchar *name, GLint v0, GLint v1, GLint v2) const
+program::uniform::set(GLint v0, GLint v1, GLint v2) const
 {
-	glUniform3i(get_uniform_location(name), v0, v1, v2);
+	glUniform3i(location_, v0, v1, v2);
 }
 
 void
-program::set_uniform_i(const GLchar *name, GLint v0, GLint v1, GLint v2, GLint v3) const
+program::uniform::set(GLint v0, GLint v1, GLint v2, GLint v3) const
 {
-	glUniform4i(get_uniform_location(name), v0, v1, v2, v3);
+	glUniform4i(location_, v0, v1, v2, v3);
 }
 
 void

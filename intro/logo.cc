@@ -1,6 +1,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include <algorithm>
+
 #include <glm/geometric.hpp>
 
 #include <ggl/pixmap.h>
@@ -24,14 +26,37 @@ logo::gen_background_texture()
 	// XXX; fix these sizes later
 	ggl::pixmap pm(width_, height_, ggl::pixmap::pixel_type::GRAY);
 
-	const glm::vec2 center(.5*pm.width, .5*pm.height);
+	auto add_blob = [&](const glm::vec2& center, float radius) {
+		int x_from = std::max(static_cast<int>(center.x - radius), 0);
+		int x_to = std::min(static_cast<int>(center.x + radius) + 1, static_cast<int>(pm.width));
 
-	struct blob {
-		glm::vec2 center;
-		float radius;
+		int y_from = std::max(static_cast<int>(center.y - radius), 0);
+		int y_to = std::min(static_cast<int>(center.y + radius) + 1, static_cast<int>(pm.height));
+
+		const int SQRT_SUBSAMPLES = 4;
+		const int NUM_SUBSAMPLES = SQRT_SUBSAMPLES*SQRT_SUBSAMPLES;
+
+		for (int y = y_from; y < y_to; y++) {
+			uint8_t *pixel = &pm.data[y*pm.width + x_from];
+
+			for (int x = x_from; x < x_to; x++) {
+				int luminance = 0;
+
+				for (int i = 0; i < SQRT_SUBSAMPLES; i++) {
+					glm::vec2 pos(x, y + static_cast<float>(i)/SQRT_SUBSAMPLES);
+
+					for (int l = 0; l < SQRT_SUBSAMPLES; l++) {
+						luminance += glm::distance(pos, center) < radius;
+						pos += glm::vec2(1./SQRT_SUBSAMPLES, 0.);
+					}
+				}
+
+				*pixel++ = std::min((luminance*255)/NUM_SUBSAMPLES + *pixel, 255);
+			}
+		}
 	};
 
-	std::vector<blob> blobs;
+	const glm::vec2 center(.5*pm.width, .5*pm.height);
 
 	for (int i = 0; i < 30; i++) {
 		const float s = 64;
@@ -39,7 +64,7 @@ logo::gen_background_texture()
 		const glm::vec2 offset(frand(-s, s), frand(-s, s));
 		float radius = 80./(1. + .1f*glm::length(offset));
 
-		blobs.push_back({ center + offset, radius });
+		add_blob(center + offset, radius);
 	}
 
 	for (int i = 0; i < 8; i++) {
@@ -49,7 +74,7 @@ logo::gen_background_texture()
 		glm::vec2 p0 = center + glm::vec2(frand(-8, 8), frand(-8, 8));
 
 		glm::vec2 p2 = center + glm::vec2(r*sinf(a), r*cosf(a));
-		glm::vec2 p1 = .5f*(p0 + p2) + glm::vec2(frand(-32, 32), frand(-32, 32));
+		glm::vec2 p1 = .5f*(p0 + p2) + glm::vec2(frand(-80, 80), frand(-80, 80));
 
 		const int NUM_TRAIL_BLOBS = 16;
 
@@ -66,41 +91,7 @@ logo::gen_background_texture()
 
 			const glm::vec2 o(frand(-radius, radius), frand(-radius, radius));
 
-			blobs.push_back({ p + o, radius });
-		}
-	}
-
-	static const int SQRT_SUBSAMPLES = 4;
-	static const int NUM_SUBSAMPLES = SQRT_SUBSAMPLES*SQRT_SUBSAMPLES;
-
-	uint8_t *pixel = &pm.data[0];
-
-	for (int i = 0; i < pm.height; i++) {
-		for (int j = 0; j < pm.width; j++) {
-			int luminance = 0;
-
-			for (int k = 0; k < SQRT_SUBSAMPLES; k++) {
-				glm::vec2 pos(j + static_cast<float>(k)/SQRT_SUBSAMPLES, i);
-
-				for (int l = 0; l < SQRT_SUBSAMPLES; l++) {
-					bool inside = false;
-
-					for (const auto& blob : blobs) {
-						if (glm::distance(pos, blob.center) < blob.radius) {
-							inside = true;
-							break;
-						}
-					}
-
-					luminance += inside;
-
-					pos += glm::vec2(0, 1./SQRT_SUBSAMPLES);
-				}
-			}
-
-			luminance = (luminance*255)/NUM_SUBSAMPLES;
-
-			*pixel++ = luminance;
+			add_blob(p + o, radius);
 		}
 	}
 

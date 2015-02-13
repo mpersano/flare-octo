@@ -8,6 +8,7 @@ enum program_id
 {
 	PROG_DECAL,
 	PROG_ARROW,
+	PROG_BLOB,
 	NUM_PROGRAMS,
 };
 

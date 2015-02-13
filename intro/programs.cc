@@ -31,8 +31,9 @@ program_manager::program_manager()
 		const char *vertex_shader;
 		const char *frag_shader;
 	} program_sources[] = {
-		{ "vert-decal.glsl", "frag-decal.glsl" },
-		{ "vert-arrow.glsl", "frag-arrow.glsl" },
+		{ "decal.vert", "decal.frag" },
+		{ "arrow.vert", "arrow.frag" },
+		{ "blob.vert", "blob.frag" },
 	};
 
 	for (int i = 0; i < NUM_PROGRAMS; i++) {

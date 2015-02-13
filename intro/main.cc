@@ -8,6 +8,7 @@
 #include <ggl/window.h>
 
 #include "logo.h"
+#include "blob.h"
 
 namespace {
 
@@ -25,7 +26,7 @@ private:
 
 intro_window::intro_window()
 : ggl::window(512, 256, "", false)
-, logo_(new logo(width_, height_))
+, logo_(new blob(width_, height_))
 { }
 
 void

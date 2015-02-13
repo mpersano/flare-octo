@@ -23,6 +23,7 @@ set(INTRO_SOURCES
 	util.cc
 	programs.cc
 	logo.cc
+	blob.cc
 	main.cc)
 
 add_executable(intro ${INTRO_SOURCES})

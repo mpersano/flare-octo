@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "programs.h"
 #include "blob.h"
 
@@ -36,15 +38,8 @@ blob::blob(int width, int height)
 
 			vbo_.add_index(v0);
 			vbo_.add_index(v1);
-
-			vbo_.add_index(v1);
-			vbo_.add_index(v2);
-
 			vbo_.add_index(v2);
 			vbo_.add_index(v3);
-
-			vbo_.add_index(v3);
-			vbo_.add_index(v0);
 		}
 	}
 
@@ -63,7 +58,17 @@ blob::draw(float now) const
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glTranslatef(0, 0, -300);
+	glRotatef(10.*now, 1, 0, 0);
 
-	get_program(PROG_BLOB)->use();
-	vbo_.draw(GL_LINES);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+
+	const ggl::program *prog = get_program(PROG_BLOB);
+
+	prog->use();
+	prog->get_uniform("phase").set(now);
+	prog->get_uniform("amp").set(7.f + 7.f*sinf(.5f*now));
+	prog->get_uniform("radius").set(100.f);
+
+	vbo_.draw(GL_QUADS);
 }
